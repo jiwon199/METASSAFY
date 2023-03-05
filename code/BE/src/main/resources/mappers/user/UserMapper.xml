@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.metassafy.mapper.user.UserMapper">
+
+    <select id="getAllUser"  resultType="com.ssafy.metassafy.dto.user.User">
+        select * from User;
+    </select>
+
+
+    <select id="searchUserList" parameterType="string" resultType="com.ssafy.metassafy.dto.user.User">
+        SELECT * FROM User WHERE name LIKE CONCAT('%', #{search}, '%') or user_id LIKE CONCAT('%', #{search}, '%') ;
+    </select>
+    <insert id="regist" parameterType="com.ssafy.metassafy.dto.user.User">
+        INSERT INTO User(user_id, user_pwd,name,area,email,regtime)
+        VALUES (#{user_id}, #{user_pwd}, #{name},#{area},#{email},now());
+    </insert>
+
+    <select id="login"  resultType="com.ssafy.metassafy.dto.user.JwtInfoDto">
+        select * from User where user_id = #{user_id} and  user_pwd=#{user_pwd};
+    </select>
+
+    <select id="getCount" parameterType="string" resultType="integer" >
+        select count(*) from User where user_id = #{user_id};
+    </select>
+
+    <select id="getEmailCount" parameterType="string" resultType="integer" >
+        select count(*) from User where email = #{email};
+    </select>
+
+    <select id="getUser" parameterType="string" resultType="com.ssafy.metassafy.dto.user.User" >
+        select * from User where user_id = #{user_id};
+    </select>
+
+    <update id="update" parameterType="com.ssafy.metassafy.dto.user.User">
+        update User
+        <trim prefix="set" suffixOverrides=",">
+            <if test="user_pwd != null">user_pwd=#{user_pwd},</if>
+            <if test="student_no != null">student_no=#{student_no},</if>
+            <if test="name != null">name=#{name},</if>
+            <if test="area != null">area=#{area},</if>
+            <if test="email != null">email=#{email},</if>
+            <if test="gender != null">gender=#{gender},</if>
+
+            <if test="birthday != null">birthday=#{birthday},</if>
+            <if test="age != null">age=#{age},</if>
+            <if test="interest != null">interest=#{interest},</if>
+            <if test="profile_img != null">profile_img=#{profile_img},</if>
+            <if test="profile_txt != null">profile_txt=#{profile_txt},</if>
+            <if test="first_semester != null">first_semester=#{first_semester},</if>
+
+            <if test="common != null">common=#{common},</if>
+            <if test="special != null">special=#{special},</if>
+            <if test="free != null">free=#{free},</if>
+            <if test="first_semester_class != null">first_semester_class=#{first_semester_class},</if>
+            <if test="common_class != null">common_class=#{common_class},</if>
+            <if test="special_class != null">special_class=#{special_class},</if>
+            <if test="free_class != null">free_class=#{free_class},</if>
+            <if test="common_team!= null">common_team=#{common_team},</if>
+            <if test="special_team!= null">special_team=#{special_team},</if>
+            <if test="free_team != null">free_team=#{free_team},</if>
+
+            <if test="x!= null">x=#{x},</if>
+            <if test="y != null">y=#{y},</if>
+            <if test="z != null">z=#{z},</if>
+
+            <if test="generation != null">generation=#{generation},</if>
+            <if test="major != null">major=#{major},</if>
+
+            <if test="free_jo != null">free_jo=#{free_jo},</if>
+            <if test="common_jo!= null">common_jo=#{common_jo},</if>
+            <if test="special_jo!= null">special_jo=#{special_jo},</if>
+        </trim>
+        where user_id=#{user_id};
+    </update>
+
+    <delete id="deleteUser" parameterType="string">
+        delete from User where user_id=#{user_id};
+    </delete>
+
+    <select id="getAllTechList"  resultType="com.ssafy.metassafy.dto.user.TechStack">
+        select * from Tech_Stack;
+    </select>
+
+    <select id="getTechStack"  parameterType="string" resultType="com.ssafy.metassafy.dto.user.TechStack">
+        select * from Tech_Stack where tech_id in
+        (select tech_id from User_Tech where user_id=#{user_id});
+    </select>
+
+    <insert id="addTech" parameterType="map">
+        INSERT INTO User_Tech(user_id, tech_id)
+        VALUES (#{user_id}, #{tech_id});
+    </insert>
+
+    <select id="checkTechDuplicate" parameterType="map" resultType="integer">
+        Select count(*) from User_Tech where user_id=#{user_id} and tech_id=#{tech_id};
+    </select>
+    <delete id="deleteTech" parameterType="map">
+        delete from User_Tech where user_id=#{user_id} and tech_id=#{tech_id};
+    </delete>
+
+    <update id="setRefresh" >
+        update User
+        set refresh_token=#{refresh_token}
+        where user_id=#{user_id};
+    </update>
+    <select id="getUserWithRefresh" parameterType="string" resultType="com.ssafy.metassafy.dto.user.User" >
+        select * from User where refresh_token = #{refresh_token};
+    </select>
+    <update id="setProfileImg"  >
+        update User set profile_img=#{profile_img} where user_id=#{user_id}
+    </update>
+</mapper>

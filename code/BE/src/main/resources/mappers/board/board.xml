@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.metassafy.mapper.board.BoardMapper">
+
+	<resultMap id="article"  type="com.ssafy.metassafy.dto.board.BoardDto" autoMapping="true">
+		<result property="article_no" column="article_no"/>
+		<result property="user_id" column="user_id"/>
+		<result property="title" column="title"/>
+		<result property="content" column="content"/>
+		<result property="hit" column="hit"/>
+		<result property="regtime" column="regtime"/>
+		<result property="modtime" column="modtime"/>
+		<result property="thumbnail" column="thumbnail"/>
+		<result property="like" column="like"/>
+		<result property="my_like" column="my_like"/>
+		<result property="my_article" column="my_article"/>
+		<result property="name" column="name"/>
+		<result property="generation" column="generation"/>
+		<result property="area" column="area"/>
+		<collection property="files" column="{article_no = article_no}" ofType="com.ssafy.metassafy.dto.file.FileDto" select="selectFile" />
+	</resultMap>
+
+	<select id="selectFile" resultType="com.ssafy.metassafy.dto.file.FileDto">
+		SELECT article_no, origin_name, saved_name, path FROM article_file WHERE article_no= #{article_no}
+	</select>
+
+	<insert id="writeArticle" parameterType="com.ssafy.metassafy.dto.board.BoardDto" useGeneratedKeys="true" keyProperty="article_no">
+		insert into article (user_id, title, content, regtime, modtime, thumbnail)
+		values (#{user_id}, #{title}, #{content}, now(), now(), #{thumbnail})
+	</insert>
+
+	<insert id="makeLike" parameterType="com.ssafy.metassafy.dto.like.LikeDto">
+		insert into `like` (like_type, user_id, no)
+		values (#{like_type}, #{user_id}, #{no})
+	</insert>
+
+	<insert id="uploadFile" parameterType="com.ssafy.metassafy.dto.file.FileDto">
+		insert into article_file (article_no, origin_name, saved_name, path)
+		values (#{article_no}, #{origin_name}, #{saved_name}, #{path})
+	</insert>
+
+	<insert id="uploadLike" parameterType="com.ssafy.metassafy.dto.like.LikeDto">
+		insert into `like` (like_type, user_id, `no`)
+		values (#{like_type}, #{user_id}, #{no})
+	</insert>
+
+	<delete id="deleteLike" parameterType="com.ssafy.metassafy.dto.like.LikeDto">
+		delete from `like`
+		where like_type = #{like_type} and user_id = #{user_id}  and `no` = #{no}
+	</delete>
+
+	<select id="listArticle" parameterType="com.ssafy.metassafy.dto.board.BoardParameterDto" resultMap="article">
+		select a.article_no, a.user_id, a.title, a.content, a.hit, a.regtime, a.modtime, a.thumbnail, (select count(*) from `like` where like_type = 1 and `no` = a.article_no) as `like`,(select count(*) from `like` where like_type = 1 and user_id = #{user_id} and `no` = a.article_no) as `my_like`, (select a.user_id = #{user_id}) as `my_article`,u.name, u.generation, u.area
+		from article a
+		LEFT JOIN User u
+		ON a.user_id = u.user_id
+		<where>
+			<if test="word != null and word != ''">
+				<if test="key == 'title'">
+					and a.title like concat('%', #{word}, '%')
+				</if>
+				<if test="key == 'content'">
+					and a.content like concat('%', #{word}, '%')
+				</if>
+				<if test="key == 'user_id'">
+					and a.user_id = #{word}
+				</if>
+				<if test="key == 'area'">
+					<choose>
+						<when test="word == '서울'">
+							and u.area = '서울'
+						</when>
+						<when test="word == '구미'">
+							and u.area = '구미'
+						</when>
+						<when test="word == '광주'">
+							and u.area = '광주'
+						</when>
+						<when test="word == '대전'">
+							and u.area = '대전'
+						</when>
+						<when test="word == '부울경'">
+							and u.area = '부울경'
+						</when>
+					</choose>
+				</if>
+			</if>
+		</where>
+		ORDER BY
+		<if test="popularity == 'true'">
+			`like` desc
+		</if>
+		<if test="popularity == 'false'">
+			a.article_no desc
+		</if>
+	</select>
+
+
+	<select id="getArticle" parameterType="com.ssafy.metassafy.dto.board.BoardParameterDto" resultMap="article">
+		select a.article_no, a.user_id, a.title, a.content, a.hit, a.regtime, a.modtime, a.thumbnail, (select count(*) from `like` where like_type = 1 and `no` = a.article_no) as `like`,(select count(*) from `like` where like_type = 1 and user_id = #{user_id} and `no` = a.article_no) as `my_like`, (select a.user_id = #{user_id}) as `my_article`,u.name, u.generation, u.area
+		from article a
+				 LEFT JOIN User u
+						   ON a.user_id = u.user_id
+		where a.article_no = #{article_no}
+	</select>
+
+	<select id="getFiles" parameterType="int" resultType="com.ssafy.metassafy.dto.file.FileDto">
+		select article_no, origin_name, saved_name, path
+		from article_file
+		where article_no = #{article_no}
+	</select>
+
+	<update id="updateHit" parameterType="int">
+		update article
+		set hit = hit + 1
+		where article_no = #{article_no}
+	</update>
+
+
+	<update id="modifyArticle" parameterType="com.ssafy.metassafy.dto.board.BoardDto">
+		update article
+		set title = #{title}, content = #{content}, thumbnail = #{thumbnail}, modtime = now()
+		where article_no = #{article_no}
+	</update>
+
+
+	<delete id="deleteArticle" parameterType="int">
+		delete from article
+		where article_no = #{article_no}
+	</delete>
+
+	<delete id="deleteFile" parameterType="com.ssafy.metassafy.dto.file.FileDto">
+		delete from article_file
+		where article_no = #{article_no} and saved_name = #{saved_name}
+	</delete>
+
+
+</mapper>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+		"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.metassafy.mapper.board.BoardMapper">
+
+	<resultMap id="article"  type="com.ssafy.metassafy.dto.board.BoardDto" autoMapping="true">
+		<result property="article_no" column="article_no"/>
+		<result property="user_id" column="user_id"/>
+		<result property="title" column="title"/>
+		<result property="content" column="content"/>
+		<result property="hit" column="hit"/>
+		<result property="regtime" column="regtime"/>
+		<result property="modtime" column="modtime"/>
+		<result property="thumbnail" column="thumbnail"/>
+		<result property="like" column="like"/>
+		<collection property="subjectList" column="{article_no = article_no}" ofType="com.ssafy.metassafy.dto.file.FileDto" select="selectFile" />
+	</resultMap>
+
+	<select id="selectFile" resultType="com.ssafy.metassafy.dto.file.FileDto">
+		SELECT article_no, user_id, origin_name, saved_name, path FROM article_file WHERE article_no= #{article_no}
+	</select>
+
+	<insert id="writeArticle" parameterType="com.ssafy.metassafy.dto.board.BoardDto" useGeneratedKeys="true" keyProperty="article_no">
+		insert into article (user_id, title, content, regtime, modtime, thumbnail)
+		values (#{user_id}, #{title}, #{content}, now(), now(), #{thumbnail})
+	</insert>
+
+	<insert id="makeLike" parameterType="com.ssafy.metassafy.dto.like.LikeDto">
+		insert into like (like_type, user_id, no)
+		values (#{like_type}, #{user_id}, #{no})
+	</insert>
+
+	<insert id="uploadFile" parameterType="com.ssafy.metassafy.dto.file.FileDto">
+		insert into article_file (article_no, origin_name, saved_name, path)
+		values (#{article_no}, #{origin_name}, #{saved_name}, #{path})
+	</insert>
+
+	<select id="listArticle" parameterType="com.ssafy.metassafy.dto.board.BoardParameterDto" resultMap="article">
+		select article_no, user_id, title, content, hit, regtime, modtime, thumbnail, (select count(*) from like where like_type = 0 and article_no = no) as like
+		from article
+		<if test="word != null and word != ''">
+			<if test="key == 'title'">
+				and title like concat('%', #{word}, '%')
+			</if>
+			<if test="key != 'title'">
+				and ${key} = #{word}
+			</if>
+		</if>
+		order by article_no desc
+	</select>
+
+
+	<select id="getArticle" parameterType="int" resultMap="article">
+		select article_no, user_id, title, content, hit, regtime, modtime, thumbnail, (select count(*) from like where like_type = 0 and article_no = no) as like
+		from article
+		where article_no = #{article_no}
+	</select>
+
+	<update id="updateHit" parameterType="int">
+		update article
+		set hit = hit + 1
+		where article_no = #{article_no}
+	</update>
+
+<<<<<<< HEAD:src/main/resources/mapper/board/board.xml
+	<update id="modifyArticle" parameterType="com.ssafy.metassafy.dto.board.BoardDto">
+		update article
+		set title = #{title}, content = #{content}
+		where article_no = #{article_no}
+	</update>
+
+
+	<delete id="deleteArticle" parameterType="int">
+		delete from article
+		where article_no = #{article_no}
+	</delete>
+
+</mapper>
+=======
+<!--</mapper> -->
+>>>>>>> c234baca0dadc32d35d239045afb238f9bf3d297:src/main/resources/mapper/board.xml
+

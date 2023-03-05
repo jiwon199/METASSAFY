@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ssafy.metassafy.mapper.friend.FriendMapper">
+    <select id="getFriendList" resultType="com.ssafy.metassafy.dto.user.User">
+        <![CDATA[
+		 select * from User where user_id in
+        (select to_user_id from Friend where from_user_id=#{user_id} and accept=true
+        UNION
+        select from_user_id from Friend where to_user_id=#{user_id} and accept=true);
+	    ]]>
+    </select>
+
+    <select id="getRecommendFriendList" parameterType="com.ssafy.metassafy.dto.friend.RecommendDto" resultType="com.ssafy.metassafy.dto.user.User">
+        SELECT *
+        FROM User
+        WHERE user_id != #{user_id} AND user_id NOT IN (SELECT to_user_id FROM Friend WHERE from_user_id = #{user_id}) AND user_id NOT IN (SELECT from_user_id FROM Friend WHERE to_user_id = #{user_id})
+        ORDER BY FIELD(area, #{area}) DESC, area ASC, FIELD(interest, #{interest}) DESC, interest ASC, rand() LIMIT 10
+    </select>
+
+    <select id="getFriendNum" resultType="string">
+        <![CDATA[
+		select count(*) from Friend where (from_user_id=#{user_id} or to_user_id=#{user_id}) and accept=true ;
+	    ]]>
+    </select>
+
+    <select id="getNotifyList" resultType="com.ssafy.metassafy.dto.friend.FriendDto">
+        <![CDATA[
+		select * from Friend where to_user_id=#{user_id};
+	    ]]>
+    </select>
+    <select id="countRelation" resultType="integer">
+        <![CDATA[
+		select count(*) from Friend where (to_user_id=#{to_user_id} and from_user_id=#{from_user_id})
+        or (to_user_id=#{from_user_id} and from_user_id=#{to_user_id});
+	    ]]>
+    </select>
+
+    <select id="getNotify" resultType="com.ssafy.metassafy.dto.friend.FriendDto">
+        <![CDATA[
+		select * from Friend where to_user_id=#{to_user_id} and from_user_id=#{from_user_id};
+	    ]]>
+    </select>
+    <select id="getSendList" resultType="com.ssafy.metassafy.dto.friend.FriendDto">
+        <![CDATA[
+		select * from Friend where from_user_id=#{from_user_id} and accept=false;
+	    ]]>
+    </select>
+
+    <insert id="addNotify"  >
+        Insert Into Friend(from_user_id,to_user_id,accept) Values(#{from_user_id},#{to_user_id},false);
+    </insert>
+
+    <update id="acceptFriend">
+        update Friend set accept=true where friend_no=#{friend_no};
+    </update>
+    <delete id="rejectFriend">
+        delete from Friend where friend_no=#{friend_no};
+    </delete>
+    <delete id="deleteFriend">
+        delete from Friend where (from_user_id=#{user_id1} and to_user_id=#{user_id2}) or (from_user_id=#{user_id2} and to_user_id=#{user_id1});
+    </delete>
+</mapper>

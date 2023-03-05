@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.metassafy.mapper.memo.MemoMapper">
+
+	<select id="listMemo" parameterType="com.ssafy.metassafy.dto.memo.MemoParameterDto" resultType="com.ssafy.metassafy.dto.memo.MemoDto">
+		SELECT m.memo_no, m.article_no, m.user_id, m.content,(SELECT COUNT(*) FROM `like` WHERE like_type = 2 AND `no` = m.memo_no) memo_like, (select count(*) from `like` where like_type = 2 and user_id = #{user_id} and `no` = m.memo_no) as `my_like`, m.regtime, u.name, u.profile_img
+		FROM memo m
+	 	LEFT JOIN User u
+	   	ON m.user_id = u.user_id
+        WHERE m.article_no = #{article_no}
+	</select>
+
+	<insert id="writeMemo" parameterType="com.ssafy.metassafy.dto.memo.MemoDto">
+		INSERT INTO memo (article_no, user_id, content)
+		VALUES (#{article_no}, #{user_id}, #{content})
+	</insert>
+
+
+	<select id="getMemo" parameterType="int" resultType="com.ssafy.metassafy.dto.memo.MemoDto">
+		SELECT memo_no, article_no, user_id, content,(SELECT COUNT(*) FROM `like` WHERE like_type = 2 AND `no` = #{memo_no}) memo_like, regtime
+		FROM memo
+		WHERE memo_no = #{memo_no}
+	</select>
+
+	<update id="editMemo" parameterType="com.ssafy.metassafy.dto.memo.MemoDto">
+		UPDATE memo
+		SET content = #{content}
+		WHERE memo_no = #{memo_no}
+	</update>
+
+	<delete id="deleteMemo" parameterType="int">
+		DELETE FROM memo
+		WHERE memo_no = #{memo_no}
+	</delete>
+
+	<delete id="deleteLike" parameterType="int">
+		DELETE FROM `like`
+		WHERE like_type = 2 and `no` = #{memo_no}
+	</delete>
+
+</mapper>
+

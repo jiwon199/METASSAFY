@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.ssafy.metassafy.mapper.chatting.ChatMapper">
+
+<!--	private int croom_no;-->
+<!--	private String croom_name;-->
+<!--	private String last_chat;-->
+<!--	private int not_read_chat;-->
+<!--	private String chatroom_img;-->
+<!--	private String regtime;-->
+
+	<resultMap id="chatroom"  type="com.ssafy.metassafy.dto.chatting.ChatRoomDto" autoMapping="true">
+		<result property="croom_no" column="croom_no"/>
+		<result property="croom_name" column="croom_name"/>
+		<result property="last_chat" column="last_chat"/>
+		<result property="not_read_chat" column="not_read_chat"/>
+		<result property="regtime" column="regtime"/>
+		<result property="croom_img" column="croom_img"/>
+		<result property="start_no" column="start_no"/>
+		<collection property="participants" column="{croom_no = croom_no}" ofType="string" select="selectParticipant" />
+	</resultMap>
+
+	<select id="selectParticipant" resultType="string">
+		SELECT u.name
+		FROM `chatroom` c
+	 	LEFT JOIN `participant` p
+	    ON c.croom_no = p.croom_no
+		LEFT JOIN `User` u
+		ON p.user_id = u.user_id
+		WHERE c.croom_no= #{croom_no}
+	</select>
+
+	<select id="findAllRooms" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultType="com.ssafy.metassafy.dto.chatting.ChatRoomDto">
+		SELECT c.croom_no, c.croom_name, c.last_chat, (SELECT not_read_chat FROM participant WHERE user_id = #{user_id} AND croom_no = c.croom_no) not_read_chat,(SELECT MAX(regtime) FROM chat WHERE croom_no = c.croom_no ORDER BY chat_no DESC) last_chat_time ,c.croom_img, c.regtime, (SELECT MIN(chat_no) FROM chat WHERE croom_no = c.croom_no) start_no
+		FROM chatroom c
+		WHERE c.croom_no in (SELECT croom_no FROM participant WHERE user_id = #{user_id})
+		ORDER BY last_chat_time DESC
+	</select>
+
+	<select id="getRoom" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultMap="chatroom">
+		SELECT croom_no, croom_name, last_chat, (select not_read_chat from participant where user_id = #{user_id} and croom_no = #{croom_no}) not_read_chat,(select MAX(regtime) from chat where croom_no = #{croom_no} ORDER BY chat_no DESC) last_chat_time, croom_img, regtime, (SELECT MIN(chat_no) FROM chat WHERE croom_no = #{croom_no}) start_no
+		FROM `chatroom`
+		WHERE croom_no = #{croom_no}
+	</select>
+
+	<insert id="createChatRoom" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" useGeneratedKeys="true" keyProperty="croom_no">
+		INSERT INTO chatroom (croom_name, croom_img)
+		VALUES (#{croom_name}, #{croom_img})
+	</insert>
+
+	<update id="editChatRoom" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto">
+		UPDATE chatroom
+		SET croom_name = #{croom_name}, croom_img = #{croom_img}
+		WHERE croom_no = #{croom_no}
+	</update>
+
+	<delete id="deleteChatRoom" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto">
+		DELETE FROM chatroom
+		WHERE croom_no = #{croom_no}
+	</delete>
+
+<!--	private int chat_no;-->
+<!--	private int croom_no;-->
+<!--	private String user_id;-->
+<!--	private String user_name;-->
+<!--	private String message;-->
+<!--	private int not_read;-->
+<!--	private String regtime;-->
+	<select id="upScroll" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultType="com.ssafy.metassafy.dto.chatting.ChatDto">
+		SELECT c.chat_no, c.croom_no, c.user_id, u.name, c.message, c.not_read, c.regtime, u.profile_img
+		FROM chat c
+				 LEFT JOIN User u
+						   ON c.user_id = u.user_id
+		WHERE c.croom_no = #{croom_no} AND chat_no BETWEEN #{start_no} AND (#{cur_no} - 1)
+	</select>
+
+	<select id="findAllChat" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultType="com.ssafy.metassafy.dto.chatting.ChatDto">
+		SELECT c.chat_no, c.croom_no, c.user_id, u.name, c.message, c.not_read, c.regtime, u.profile_img
+		FROM chat c
+		LEFT JOIN User u
+		ON c.user_id = u.user_id
+		WHERE c.croom_no = #{croom_no} AND chat_no >= #{start_no}
+	</select>
+
+	<select id="getMemberNum" parameterType="com.ssafy.metassafy.dto.chatting.ChatDto" resultType="int">
+		SELECT COUNT(*)
+		FROM participant
+		WHERE croom_no = #{croom_no}
+	</select>
+
+	<select id="getLastReadChatId" parameterType="Integer" resultType="int">
+		SELECT max(chat_no)
+		FROM chat
+		WHERE croom_no = #{croom_no}
+	</select>
+
+	<select id="getUserLastReadChatId" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultType="int">
+		SELECT last_read_chat_id
+		FROM participant
+		WHERE user_id = #{user_id} AND croom_no = #{croom_no}
+	</select>
+
+	<select id="getLowChatNo" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultType="int">
+		SELECT COUNT(*)
+		FROM chat
+		WHERE croom_no = #{croom_no} AND chat_no &lt; #{cur_no}
+	</select>
+
+	<select id="getStartNo" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultType="int">
+		SELECT MIN(chat_no)
+		FROM (SELECT *
+		FROM chat
+		WHERE croom_no = #{croom_no} AND chat_no &lt; #{cur_no}
+		ORDER BY chat_no DESC
+		LIMIT 10) c
+	</select>
+
+	<insert id="createChat" parameterType="com.ssafy.metassafy.dto.chatting.ChatDto">
+		INSERT INTO chat (croom_no, user_id, message, not_read)
+		VALUES (#{croom_no}, #{user_id}, #{message}, #{not_read})
+	</insert>
+
+	<select id="getChatNo" parameterType="com.ssafy.metassafy.dto.chatting.ChatDto" resultType="int">
+		SELECT chat_no
+		FROM chat
+		WHERE croom_no = #{croom_no} and user_id = #{user_id}
+		ORDER BY chat_no DESC LIMIT 1
+	</select>
+
+	<update id="updateLastChat" parameterType="com.ssafy.metassafy.dto.chatting.ChatDto">
+		UPDATE chatroom
+		SET last_chat = #{message}
+		WHERE croom_no = #{croom_no}
+	</update>
+
+	<update id="updateNotRead" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto">
+        SET @small := (SELECT last_read_chat_id FROM participant WHERE croom_no = #{croom_no} AND user_id = #{user_id});
+        SET @big := (SELECT chat_no FROM chat WHERE croom_no = #{croom_no} ORDER BY chat_no DESC limit 1);
+
+		UPDATE chat
+		SET not_read = IF(@small = @big, not_read ,IF(not_read > 0, not_read - 1, 0))
+		WHERE croom_no = #{croom_no} AND chat_no BETWEEN @small + 1 AND @big
+	</update>
+
+	<!-- 모든 participant 리스트 -->
+	<select id="findAllParticipants" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto" resultType="com.ssafy.metassafy.dto.chatting.ParticipantDto">
+		SELECT p.user_id, p.croom_no, p.croom_name, p.not_read_chat, p.last_read_chat_id, p.regtime
+		FROM participant p
+				 LEFT JOIN chatroom c
+						   ON p.croom_no = c.croom_no
+		WHERE p.user_id = #{user_id}
+	</select>
+
+	<!-- 친구 추가시 participant 등록  -->
+	<insert id="registParticipants" parameterType="com.ssafy.metassafy.dto.chatting.ChatParameterDto">
+		INSERT INTO participant (user_id, croom_no, croom_name, not_read_chat, last_read_chat_id, regtime)
+		VALUES (#{user_id}, #{croom_no}, #{croom_name}, 0, 0, now())
+	</insert>
+
+	<delete id="deleteParticipant" parameterType="com.ssafy.metassafy.dto.chatting.ParticipantDto">
+		DELETE FROM participant
+		WHERE user_id = #{user_id} AND croom_no = #{croom_no}
+	</delete>
+
+	<!-- not_read_chat 갱신 -->
+	<update id="renewNotReadChat" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index" open="" close="" separator=";">
+			UPDATE participant
+			SET not_read_chat = (SELECT count(*) FROM chat WHERE croom_no = #{item.croom_no} AND chat_no > #{item.last_read_chat_id})
+			WHERE user_id = #{item.user_id} AND croom_no = #{item.croom_no}
+		</foreach>
+	</update>
+
+	<!-- last_read_chat_id 갱신 -->
+	<update id="renewLastReadChatId" parameterType="com.ssafy.metassafy.dto.chatting.ParticipantDto">
+		UPDATE participant
+		SET last_read_chat_id = IF((SELECT chat_no FROM chat WHERE croom_no = #{croom_no} ORDER BY chat_no DESC LIMIT 1) IS NULL, 0, (SELECT chat_no FROM chat WHERE croom_no = #{croom_no} ORDER BY chat_no DESC LIMIT 1))
+		WHERE user_id = #{user_id} and croom_no = #{croom_no}
+	</update>
+
+	<update id="leaveRoom" parameterType="com.ssafy.metassafy.dto.chatting.ParticipantDto">
+		UPDATE participant
+		SET last_read_chat_id = (SELECT chat_no FROM chat WHERE croom_no = #{croom_no} ORDER BY chat_no DESC LIMIT 1)
+		WHERE user_id = #{user_id} and croom_no = #{croom_no}
+	</update>
+
+</mapper>
+
